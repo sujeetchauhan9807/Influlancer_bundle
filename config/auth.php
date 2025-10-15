@@ -44,6 +44,10 @@ return [
             'driver' => 'jwt',
             'provider' => 'users',
         ],
+        'influencer' => [
+            'driver' => 'jwt',
+            'provider' => 'influencers',
+        ],
     ],
 
     /*
@@ -72,6 +76,10 @@ return [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', App\Models\User\User::class),
         ],
+        'influencers' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Influencer\Influencer::class,
+        ]
 
         // 'users' => [
         //     'driver' => 'database',

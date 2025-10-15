@@ -24,7 +24,6 @@ class UserStatusRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id' => 'required|exists:users,id',
             'status'  => 'required|in:active,deactive',
         ];
     }
@@ -32,6 +31,7 @@ class UserStatusRequest extends FormRequest
     protected function failedValidation(Validator $validator)
     {
         throw new HttpResponseException(response()->json([
+            'status' => false,
             'message' => 'Validation error',
             'errors' => $validator->errors(),
         ], 422));

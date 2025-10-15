@@ -8,6 +8,7 @@ use Tymon\JWTAuth\Exceptions\JWTException;
 use App\Http\Requests\LoginRequest;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
+use Throwable;
 
 class AuthAdminController extends Controller
 {
@@ -22,23 +23,32 @@ class AuthAdminController extends Controller
      */
     public function login(LoginRequest $request)
     {
-        $credentials = $request->only('email', 'password');
+        try {
+            $credentials = $request->only('email', 'password');
+            if (!$token = Auth::guard('admin')->attempt($credentials)) {
+                return response()->json([
+                    'status' => false,
+                    'error' => 'Invalid email or password'
+                ], 401);
+            }
 
-        if (!$token = Auth::guard('admin')->attempt($credentials)) {
-            return response()->json([
-                'error' => 'Invalid email or password'
-            ], 401);
+            $admin = Auth::guard('admin')->user();
+
+            if ($admin->status !== 'active') {
+                return response()->json([
+                    'status' => false,
+                    'error' => 'Your account is deactivated.'
+                ], 403);
+            }
+
+            return $this->respondWithToken($token, $admin);
+        } catch(Throwable $e){
+            return request()->json([
+                'status' => false,
+                'message' => 'Login failed',
+                'error'   => $e->getMessage()
+            ], 500);
         }
-
-        $admin = Auth::guard('admin')->user();
-
-        if ($admin->status !== 'active') {
-            return response()->json([
-                'error' => 'Your account is deactivated.'
-            ], 403);
-        }
-
-        return $this->respondWithToken($token, $admin);
     }
 
     /**
@@ -50,21 +60,25 @@ class AuthAdminController extends Controller
             Auth::guard('admin')->logout();
 
             return response()->json([
+                'status' => true,
                 'message' => 'Successfully logged out'
             ], 200);
 
         } catch (TokenExpiredException $e) {
             return response()->json([
+                'status' => false,
                 'message' => 'Token has already expired'
             ], 401);
 
         } catch (TokenInvalidException $e) {
             return response()->json([
+                'status' => false,
                 'message' => 'Token is invalid'
             ], 401);
 
         } catch (JWTException $e) {
             return response()->json([
+                'status' => false,
                 'message' => 'Token is missing or could not be parsed'
             ], 400);
         }
@@ -74,18 +88,28 @@ class AuthAdminController extends Controller
      */
     public function verifyToken()
     {
-        $admin = Auth::guard('admin')->user();
+        try {
+            $admin = Auth::guard('admin')->user();
+            if (!$admin) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Invalid or expired token.'
+                ], 401);
+            }
 
-        if (!$admin) {
             return response()->json([
-                'message' => 'Invalid or expired token.'
-            ], 401);
-        }
+                'status' => false,
+                'message' => 'Token is valid',
+                'admin'   => $admin
+            ], 200);
 
-        return response()->json([
-            'message' => 'Token is valid',
-            'admin'   => $admin
-        ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Token validation failed',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -93,12 +117,21 @@ class AuthAdminController extends Controller
      */
     protected function respondWithToken($token, $admin)
     {
-        return response()->json([
-            'message'     => 'Login successful',
-            'admin'       => $admin,
-            'accessToken' => $token,
-            'token_type'  => 'bearer',
-            'expires_in'  => Auth::guard('admin')->factory()->getTTL() * 60,
-        ]);
+        try {
+            return response()->json([
+                'status' => true,
+                'message'     => 'Login successful',
+                'admin'       => $admin,
+                'accessToken' => $token,
+                'token_type'  => 'bearer',
+                'expires_in'  => Auth::guard('admin')->factory()->getTTL() * 60,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Access token failed',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

@@ -8,11 +8,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Tymon\JWTAuth\Contracts\JWTSubject;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class User extends Authenticatable implements JWTSubject
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, SoftDeletes; // add SoftDeletes here
     
     public function getJWTIdentifier()
     {
@@ -61,6 +63,27 @@ class User extends Authenticatable implements JWTSubject
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    //  Relationships
+
+    // public function campaigns()
+    // {
+    //     return $this->hasMany(Campaign::class, 'user_id');
+    // }
+
+    /**
+     * Accessor – automatically return full image URL.
+     */
+
+    protected function profileImage():Attribute
+    {
+        return Attribute::make(
+            get: fn($value) => $value
+            ? asset('user/profile_uploads/' . $value)
+            : asset('user/profile_uploads/default.png')
+        );
+
     }
 }
 

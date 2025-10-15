@@ -24,12 +24,11 @@ class RegisterRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string|max:100|min:3|regex:/^[a-zA-Z\s]+$/',
-            'email' => 'required|email|unique:users,email|regex:/^[a-zA-Z0-9.@]+$/',
-            'role' => 'required|string',
-            'password' => 'required|string|min:8|confirmed',
-            'phone' => 'required|string|regex:/^[6-9][0-9]{9}$/',
-            'profile_image' => 'required|nullable|image|mimes:jpg,jpeg,png|max:500',
+            'name'              => 'required|string|max:100|min:3|regex:/^[a-zA-Z\s]+$/',
+            'email'             => 'required|email|unique:users,email|regex:/^[a-zA-Z0-9.@]+$/',
+            'password'          => 'required|string|min:8|confirmed',
+            'phone'             => 'required|string|regex:/^[6-9][0-9]{9}$/',
+            'profile_image'     => 'required|nullable|image|mimes:jpg,jpeg,png|max:500',
         ];
     }
 
@@ -45,6 +44,7 @@ class RegisterRequest extends FormRequest
     protected function failedValidation(Validator $validator)
     {
         throw new HttpResponseException(response()->json([
+            'status' => false,
             'message' => 'Validation error',
             'errors' => $validator->errors(),
         ], 422));
